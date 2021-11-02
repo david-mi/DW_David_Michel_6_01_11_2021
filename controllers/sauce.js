@@ -39,14 +39,31 @@ exports.updateOneSauce = (req, res, next) =>{
 	/// on regarde si l'objet sauce existe dans la requête
 	/// si oui ça veut dire qu'on souhaite changer l'image
 	if (req.body.sauce){
-		const updatedSauce = new Sauce({
-		...parseSauce(req.body.sauce),
-		imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-		_id: req.params.id
-	})
-	Sauce.updateOne({_id: req.params.id},updatedSauce)
-		.then(() => {
-			res.status(201).json( {message: "Objet modifié"} )
+		let storedUrl = ''
+		// on cherche d'abord l'image contenue dans 
+		// la sauce qu'on veut modifier
+		Sauce.findOne({ _id: req.params.id})
+			.then(sauce => {
+				// on garde son chemin
+				storedUrl = sauce.imageUrl.split('/images/')[1]
+				console.log(`Voici le storedUrl : ${storedUrl} \n /////////`)
+			})
+			.catch(err => res.status(404).json( { err } ))
+
+			const updatedSauce = new Sauce({
+				...parseSauce(req.body.sauce),
+				imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+				_id: req.params.id
+			})
+			Sauce.updateOne({_id: req.params.id},updatedSauce)
+			.then(() => {
+				fs.unlink(`images/${storedUrl}`, (err) =>{
+					if(err){
+						throw err
+					}
+					console.log(`images/${storedUrl} has been deleted`);
+				})
+			res.status(201).json( {message: "Objet modifié"})
 		})
 		.catch((err) => res.status(400).json({ err }));
 
@@ -66,25 +83,60 @@ exports.updateOneSauce = (req, res, next) =>{
 	
 }
 
+let checkUser = (likedtab, dislikedtab, id) => {
+		likedtab.some(e => e === id)
+		dislikedtab.some(e => e === id)
+		return [likedtab.some(e => e === id), dislikedtab.some(e => e === id)]
+}
 
-// console.log(`Id de req.params.id ${req.params.id}`)
-// console.log(`req.params ${req.params}`)
-// console.log('//////////')
-// console.log(updatedSauce)
+let removeId = (likedtab, dislikedtab, id) =>{
+	return [likedtab.filter(i => i !== id), dislikedtab.filter(i => i !== id)]
+}
+	
+	
 
 
-/// mettre à jour une sauce sans changer d'image
+exports.voteOneSauce = (req, res, next) =>{
+	let likeValue = req.body.like
+	let user = req.body.userId
+	console.log(likeValue)
+	console.log(user)
+	
+	Sauce.findOne({_id: req.params.id})
+		.then(sauce =>  {
+			let totalLikes = sauce.likes + likeValue
+			let likedTab = [...sauce.usersLiked]
+			let dislikedTab = [...sauce.usersDisliked]
+			likedTab = removeId(likedTab, dislikedTab, user)[0]
+			dislikedTab = removeId(likedTab, dislikedTab, user)[1]
+			if(likeValue === -1){
+				dislikedTab.push(user)
+			}else if(likeValue === 1){
+				likedTab.push(user)
+			}
+		
+			console.log(`totalLikes: ${totalLikes}`)
+			console.log(`likedTab : ${likedTab}`)
+			console.log(`dislikedTab : ${dislikedTab}`)
 
-// exports.updateOneSauce = (req, res, next) =>{
-// 	console.log(req.body.sauce)
-// 		Sauce.updateOne({_id: req.params.id}, {
-// 			...req.body.sauce,
-// 			_id: req.params.id
-// 		}
-// 			 )
-// 		.then(() => res.status(201).json({ message: "Objet modifié" }))
-// 		.catch((err) => res.status(400).json({ err }));
-// }
+			Sauce.updateOne({_id: req.params.id},{
+				//// mdr forcément que ça fonctionne mal regarde tes conneries tu prends même pas les dislikes tu fous tout dans les likes ducon
+				likes: likeValue,
+				usersLiked: likedTab,
+				usersDisliked: dislikedTab
+		
+			})
+				.then(() => res.status(201).json({ message: "Un like de plus sur cette sauce" }))
+				.catch(err => res.status(400).json({ err }))
+		})
+		.catch( err => res.status(404).json({ err }))
+	
+
+}
+
+exports.updateVotes = (req, res, next) =>{
+	console.log('ptdr')
+}
 
 exports.addSauce = (req, res, next) => {
 	// const sauceObject = JSON.parse(req.body.sauce);
