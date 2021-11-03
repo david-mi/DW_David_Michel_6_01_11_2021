@@ -83,45 +83,64 @@ exports.updateOneSauce = (req, res, next) =>{
 	
 }
 
-let checkUser = (likedtab, dislikedtab, id) => {
-		likedtab.some(e => e === id)
-		dislikedtab.some(e => e === id)
-		return [likedtab.some(e => e === id), dislikedtab.some(e => e === id)]
+let checkLike = (arr, id) => {
+	let isThere = arr.some(e => e === id)
+	if(isThere){
+		likesNb -= 1
+		return arr.filter(e => e !== id)
+	}
+	return arr
 }
 
-let removeId = (likedtab, dislikedtab, id) =>{
-	return [likedtab.filter(i => i !== id), dislikedtab.filter(i => i !== id)]
+let checkDislike = (arr, id) => {
+	let isThere = arr.some(e => e === id)
+	if(isThere){
+		dislikesNb -= 1
+		return arr.filter(e => e !== id)
+	}
+	return arr
 }
-	
-	
 
 
 exports.voteOneSauce = (req, res, next) =>{
-	let likeValue = req.body.like
-	let user = req.body.userId
-	console.log(likeValue)
-	console.log(user)
+
+
+	let voteValue = req.body.like
+	let userId = req.body.userId
+	console.log(voteValue)
+	console.log(userId)
 	
 	Sauce.findOne({_id: req.params.id})
 		.then(sauce =>  {
-			let totalLikes = sauce.likes + likeValue
+			let likesNb = sauce.likes
+			let dislikesNb = sauce.dislikes
 			let likedTab = [...sauce.usersLiked]
 			let dislikedTab = [...sauce.usersDisliked]
-			likedTab = removeId(likedTab, dislikedTab, user)[0]
-			dislikedTab = removeId(likedTab, dislikedTab, user)[1]
-			if(likeValue === -1){
-				dislikedTab.push(user)
-			}else if(likeValue === 1){
-				likedTab.push(user)
+
+
+
+			if(voteValue === -1){
+				likedTab = checkLike(likedTab, userId)
+				dislikesNb += 1
+				dislikedTab.push(userId)
+			}else if(voteValue === 1){
+				dislikedTab = checkDislike(dislikedTab, userId)
+				likesNb += 1
+				likedTab.push(userId)
+			}else if(voteValue === 0){
+				likedTab = checkLike(likedTab, userId)
+				dislikedTab = checkDislike(dislikedTab, userId)
 			}
 		
-			console.log(`totalLikes: ${totalLikes}`)
-			console.log(`likedTab : ${likedTab}`)
-			console.log(`dislikedTab : ${dislikedTab}`)
+			// console.log(`Likes: ${likesNb}`)
+			// console.log(`Dislikes: ${dislikesNb}`)
+			// console.log(`likedTab : ${likedTab}`)
+			// console.log(`dislikedTab : ${dislikedTab}`)
 
 			Sauce.updateOne({_id: req.params.id},{
-				//// mdr forcément que ça fonctionne mal regarde tes conneries tu prends même pas les dislikes tu fous tout dans les likes ducon
-				likes: likeValue,
+				
+				likes: likesNb,
+				dislikes: dislikesNb,
 				usersLiked: likedTab,
 				usersDisliked: dislikedTab
 		
