@@ -1,4 +1,6 @@
 const Sauce = require('../models/Sauce');
+const User = require('../models/User');
+const Like = require('../models/Like');
 const fs = require('fs');
 
 // fonction pour parser une cible définie
@@ -83,59 +85,90 @@ exports.updateOneSauce = (req, res, next) =>{
 	
 }
 
-let checkLike = (arr, id) => {
-	let isThere = arr.some(e => e === id)
-	if(isThere){
-		likesNb -= 1
-		return arr.filter(e => e !== id)
-	}
-	return arr
-}
 
-let checkDislike = (arr, id) => {
-	let isThere = arr.some(e => e === id)
-	if(isThere){
-		dislikesNb -= 1
-		return arr.filter(e => e !== id)
-	}
-	return arr
-}
+
 
 
 exports.voteOneSauce = (req, res, next) =>{
-
-
+	let allUsers = []
 	let voteValue = req.body.like
 	let userId = req.body.userId
 	console.log(voteValue)
 	console.log(userId)
 	
+	User.find()
+		.then(users => {
+			users.forEach(elem => allUsers.push(elem._id.toString()))
+		})
+		.catch(error => res.status(500).json({ error }))
+
 	Sauce.findOne({_id: req.params.id})
+	
 		.then(sauce =>  {
+			console.log('/////')
+			console.log(allUsers)
 			let likesNb = sauce.likes
 			let dislikesNb = sauce.dislikes
 			let likedTab = [...sauce.usersLiked]
 			let dislikedTab = [...sauce.usersDisliked]
 
+			let checkLike = (arr, id) => {
+				let isThere = arr.some(e => e === id)
+			
+				if(isThere){
+					likesNb -= 1
+					return arr.filter(e => e !== id)
+				}
+				return arr
+			}
+			
+			let checkDislike = (arr, id) => {
+				let isThere = arr.some(e => e === id)
+				
+				if(isThere){
+					dislikesNb -= 1
+					return arr.filter(e => e !== id)
+				}
+				return arr
+			}
 
+			checkAlreadyVoted = (arr, id) =>{
+				let isThere = arr.some(e => e === id)
+				if(isThere){
+					throw new Error("You cannot do the same vote twice !")
+				}
+			}
+
+			let checkRegistered = (userArr, id) =>{
+				let userCheck = userArr.some(user => user === id)
+				if(!userCheck){
+					throw new Error("This user does not exist on database")
+				}
+			}
+
+			checkRegistered(allUsers, userId)
 
 			if(voteValue === -1){
+				checkAlreadyVoted (dislikedTab, userId)
 				likedTab = checkLike(likedTab, userId)
 				dislikesNb += 1
 				dislikedTab.push(userId)
 			}else if(voteValue === 1){
+				checkAlreadyVoted (likedTab, userId)
 				dislikedTab = checkDislike(dislikedTab, userId)
 				likesNb += 1
 				likedTab.push(userId)
 			}else if(voteValue === 0){
 				likedTab = checkLike(likedTab, userId)
 				dislikedTab = checkDislike(dislikedTab, userId)
+			}else{
+				res.status(400).json({ Message: "Données invalides" })
 			}
 		
-			// console.log(`Likes: ${likesNb}`)
-			// console.log(`Dislikes: ${dislikesNb}`)
-			// console.log(`likedTab : ${likedTab}`)
-			// console.log(`dislikedTab : ${dislikedTab}`)
+			console.log(`Likes: ${likesNb}`)
+			console.log(`Dislikes: ${dislikesNb}`)
+			console.log(`likedTab : ${likedTab}`)
+			console.log(`dislikedTab : ${dislikedTab}`)
 
 			Sauce.updateOne({_id: req.params.id},{
 				
