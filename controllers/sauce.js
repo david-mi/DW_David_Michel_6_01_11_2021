@@ -73,12 +73,15 @@ exports.updateOneSauce = (req, res, next) =>{
 	// ça veut dire que les informations se trouve directement dans
 	// le body et qu'on ne souhaite pas changer l'image	
 	}else{
-		console.log(req.body.sauce)
+		console.log(req.body)
 		Sauce.updateOne({_id: req.params.id}, {
-			...req.body,
-			_id: req.params.id
-		}
-			 )
+			_id: req.params.id,
+			name: req.body.name,
+			manufacturer: req.body.manufacturer,
+			description: req.body.description,
+			mainPepper: req.body.mainPepper,
+			heat: req.body.heat
+		})
 		.then(() => res.status(201).json({ message: "Objet modifié" }))
 		.catch((err) => res.status(400).json({ err }));
 	}
@@ -93,20 +96,22 @@ exports.voteOneSauce = (req, res, next) =>{
 	let allUsers = []
 	let voteValue = req.body.like
 	let userId = req.body.userId
-	console.log(voteValue)
-	console.log(userId)
+	// console.log(voteValue)
+	// console.log(userId)
 	
 	User.find()
 		.then(users => {
 			users.forEach(elem => allUsers.push(elem._id.toString()))
 		})
 		.catch(error => res.status(500).json({ error }))
+		
 
 	Sauce.findOne({_id: req.params.id})
 	
 		.then(sauce =>  {
 			console.log('/////')
-			console.log(allUsers)
+			// console.log(sauce)
+			// console.log(allUsers)
 			let likesNb = sauce.likes
 			let dislikesNb = sauce.dislikes
 			let likedTab = [...sauce.usersLiked]
@@ -115,7 +120,7 @@ exports.voteOneSauce = (req, res, next) =>{
 			let checkLike = (arr, id) => {
 				let isThere = arr.some(e => e === id)
 			
-				if(isThere){
+				if(isThere){ 
 					likesNb -= 1
 					return arr.filter(e => e !== id)
 				}
@@ -135,14 +140,14 @@ exports.voteOneSauce = (req, res, next) =>{
 			checkAlreadyVoted = (arr, id) =>{
 				let isThere = arr.some(e => e === id)
 				if(isThere){
-					throw new Error("You cannot do the same vote twice !")
+					throw ("You cannot do the same vote twice !")
 				}
 			}
 
 			let checkRegistered = (userArr, id) =>{
 				let userCheck = userArr.some(user => user === id)
 				if(!userCheck){
-					throw new Error("This user does not exist on database")
+					throw ("This user does not exist on database")
 				}
 			}
 
@@ -162,7 +167,7 @@ exports.voteOneSauce = (req, res, next) =>{
 				likedTab = checkLike(likedTab, userId)
 				dislikedTab = checkDislike(dislikedTab, userId)
 			}else{
-				res.status(400).json({ Message: "Données invalides" })
+				throw ("Invalid data !")
 			}
 		
 			console.log(`Likes: ${likesNb}`)
@@ -178,7 +183,7 @@ exports.voteOneSauce = (req, res, next) =>{
 				usersDisliked: dislikedTab
 		
 			})
-				.then(() => res.status(201).json({ message: "Un like de plus sur cette sauce" }))
+				.then(() => res.status(201).json({ message: "Vote registered !" }))
 				.catch(err => res.status(400).json({ err }))
 		})
 		.catch( err => res.status(404).json({ err }))
@@ -186,20 +191,16 @@ exports.voteOneSauce = (req, res, next) =>{
 
 }
 
-exports.updateVotes = (req, res, next) =>{
-	console.log('ptdr')
-}
-
 exports.addSauce = (req, res, next) => {
-	// const sauceObject = JSON.parse(req.body.sauce);
+		let parsedSauce = parseSauce(req.body.sauce);
   	const sauce = new Sauce({
-    ...parseSauce(req.body.sauce),
+		userId: parsedSauce.userId,
+		name: parsedSauce.name,
+		manufacturer: parsedSauce.manufacturer,
+		description: parsedSauce.description,
+		mainPepper: parsedSauce.mainPepper,
+		heat: parsedSauce.heat,
 		imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-		likes: 0,        
-    dislikes: 0,        
-    usersLiked: [],        
-    usersDisliked: [],  
-
   })
 
   sauce.save()
