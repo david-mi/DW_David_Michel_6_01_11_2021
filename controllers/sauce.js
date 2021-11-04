@@ -13,26 +13,19 @@ exports.getAllSauces = (req, res, next) =>{
 }
 
 exports.getOneSauce = (req, res, next) =>{
-	Sauce.findOne({
-		_id: req.params.id
-	})
+	Sauce.findById(req.params.id)
 		.then(sauce => res.status(200).json(sauce))
 		.catch(err => res.status(404).json({ err }));
 }
 
-exports.deleteOneSauce = (req, res, next) =>{
-	Sauce.findOne({ _id: req.params.id })
-		.then(sauce =>{
-			console.log(console.log(`Sauce imageUrl avant le split ${sauce.imageUrl} \n//////`))
-			const filename = sauce.imageUrl.split('/images/')[1];
-			console.log(`Sauce imageUrl après le split ${filename}`)
-			fs.unlink(`images/${filename}`, ()=>{
-				Sauce.deleteOne({ _id: req.params.id })
-					.then(() => res.status(201).json({ message: "Sauce supprimée" }))
-					.catch(err => res.status(400).json({ error }));
-			})
+exports.deleteOneSauce = (req, res) =>{
+	Sauce.findByIdAndRemove(req.params.id)
+		.then(deleted => {
+			const filename = deleted.imageUrl.split('/images/')[1];
+			fs.unlink(`images/${filename}`, () => res.status(201).json({ message: "Eléments supprimés !" }))
 		})
-}
+		.catch(err => res.status(400).json({ err }));
+}	
 
 // mettre à jour une sauce avec son image
 
@@ -81,7 +74,7 @@ exports.updateOneSauce = (req, res, next) =>{
 			description: req.body.description,
 			mainPepper: req.body.mainPepper,
 			heat: req.body.heat
-		})
+		},{ runValidators: true })
 		.then(() => res.status(201).json({ message: "Objet modifié" }))
 		.catch((err) => res.status(400).json({ err }));
 	}
