@@ -6,25 +6,33 @@ const fs = require('fs');
 // fonction pour parser une cible définie
 const parseSauce = target => JSON.parse(target);
 
-exports.getAllSauces = (req, res, next) =>{
+exports.getAllSauces = (req, res) =>{
   Sauce.find()
 		.then(sauces => res.status(200).json( sauces ))
 		.catch(err => res.status(404).json({ err }))	
 }
 
-exports.getOneSauce = (req, res, next) =>{
+exports.getOneSauce = (req, res) =>{
 	Sauce.findById(req.params.id)
 		.then(sauce => res.status(200).json(sauce))
 		.catch(err => res.status(404).json({ err }));
 }
 
 exports.deleteOneSauce = (req, res) =>{
-	Sauce.findByIdAndRemove(req.params.id)
-		.then(deleted => {
-			const filename = deleted.imageUrl.split('/images/')[1];
-			fs.unlink(`images/${filename}`, () => res.status(201).json({ message: "Eléments supprimés !" }))
-		})
-		.catch(err => res.status(400).json({ err }));
+	Sauce.findById(req.params.id)
+		.then(sauce => {
+			if(sauce.userId !== req.token.userId){
+				res.status(401).json({ message: "Vous ne pouvez pas supprimer cette sauce" })
+			}else{
+				Sauce.findByIdAndRemove(req.params.id)
+					.then(deleted => {
+						const filename = deleted.imageUrl.split('/images/')[1];
+						fs.unlink(`images/${filename}`, () => res.status(201).json({ message: "Eléments supprimés !" }))
+						})
+					.catch(err => res.status(400).json({ err }));
+					}
+				})
+		.catch(err => res.status(404).json({ err }))
 }	
 
 // mettre à jour une sauce avec son image
@@ -34,55 +42,63 @@ exports.updateOneSauce = (req, res, next) =>{
 	/// on regarde si l'objet sauce existe dans la requête
 	/// si oui ça veut dire qu'on souhaite changer l'image
 	if (req.body.sauce){
-		let storedUrl = ''
-		// on cherche d'abord l'image contenue dans 
-		// la sauce qu'on veut modifier
-		Sauce.findOne({ _id: req.params.id})
-			.then(sauce => {
-				// on garde son chemin
-				storedUrl = sauce.imageUrl.split('/images/')[1]
-				console.log(`Voici le storedUrl : ${storedUrl} \n /////////`)
-			})
-			.catch(err => res.status(404).json( { err } ))
-
-			const updatedSauce = new Sauce({
-				...parseSauce(req.body.sauce),
-				imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-				_id: req.params.id
-			})
-			Sauce.updateOne({_id: req.params.id},updatedSauce)
-			.then(() => {
-				fs.unlink(`images/${storedUrl}`, (err) =>{
-					if(err){
-						throw err
-					}
-					console.log(`images/${storedUrl} has been deleted`);
+		Sauce.findById(req.params.id)
+		.then(sauce => {
+			if(sauce.userId !== req.token.userId){
+				res.status(401).json({ message: "Votre id ne correspond pas à celui de la sauce" })
+			}else{
+				let parsedSauce = parseSauce(req.body.sauce)
+				const updatedSauce = new Sauce({
+					_id: req.params.id,
+					name: parsedSauce.name,
+					manufacturer: parsedSauce.manufacturer,
+					description: parsedSauce.description,
+					mainPepper: parsedSauce.mainPepper,
+					heat: parsedSauce.heat,
+					imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
+					},{ runValidators: true })
+				Sauce.findByIdAndUpdate(req.params.id, updatedSauce, { runValidators: true })
+				.then(sauce => {
+					console.log(sauce)
+					let storedUrl = sauce.imageUrl.split('/images/')[1]
+					fs.unlink(`images/${storedUrl}`, (err) =>{
+						if(err) throw err
+						console.log(`images/${storedUrl} has been deleted`);
+					})
+					res.status(201).json({ message: "c'est modif !" })
 				})
-			res.status(201).json( {message: "Objet modifié"})
+			}
 		})
-		.catch((err) => res.status(400).json({ err }));
-
+		.catch(err => res.status(404).json({ err }))
 	/// si l'objet sauce n'est pas trouvé dans la requête
 	// ça veut dire que les informations se trouve directement dans
 	// le body et qu'on ne souhaite pas changer l'image	
 	}else{
-		console.log(req.body)
-		Sauce.updateOne({_id: req.params.id}, {
-			_id: req.params.id,
-			name: req.body.name,
-			manufacturer: req.body.manufacturer,
-			description: req.body.description,
-			mainPepper: req.body.mainPepper,
-			heat: req.body.heat
-		},{ runValidators: true })
-		.then(() => res.status(201).json({ message: "Objet modifié" }))
-		.catch((err) => res.status(400).json({ err }));
+
+		// on vérifie avec le findById que l'userId enregistré pour la sauce 
+		// existante est la même que l'userId du payload
+		Sauce.findById(req.params.id)
+		.then(sauce => {
+			if(sauce.userId !== req.token.userId){
+				res.status(401).json({ message: "Vous ne pouvez pas modifier cette sauce" })
+			}else{
+				Sauce.updateOne({_id: req.params.id}, {
+					_id: req.params.id,
+					name: req.body.name,
+					manufacturer: req.body.manufacturer,
+					description: req.body.description,
+					mainPepper: req.body.mainPepper,
+					heat: req.body.heat
+				},{ runValidators: true })
+				.then(() => res.status(201).json({ message: "Objet modifié" }))
+				.catch((err) => res.status(400).json({ err }));
+			}
+		})
+		.catch(err => res.status(404).json({ err }))
+		
 	}
 	
 }
-
-
-
 
 
 exports.voteOneSauce = (req, res, next) =>{
@@ -180,14 +196,12 @@ exports.voteOneSauce = (req, res, next) =>{
 				.catch(err => res.status(400).json({ err }))
 		})
 		.catch( err => res.status(404).json({ err }))
-	
-
 }
 
 exports.addSauce = (req, res, next) => {
 		let parsedSauce = parseSauce(req.body.sauce);
   	const sauce = new Sauce({
-		userId: parsedSauce.userId,
+		userId: req.token.userId,
 		name: parsedSauce.name,
 		manufacturer: parsedSauce.manufacturer,
 		description: parsedSauce.description,
