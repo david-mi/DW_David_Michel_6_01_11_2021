@@ -149,8 +149,15 @@ exports.addSauce = (req, res, next) => {
 		heat: parsedSauce.heat,
 		imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
   })
+	let storedUrl = sauce.imageUrl.split('/images/')[1]
   sauce.save()
 		.then(() => res.status(201).json({ Message: "Sauce Créé" }))
-		.catch(err => res.status(400).json({ err }))
+		.catch(err => {
+			fs.unlink(`images/${storedUrl}`, (err) =>{
+				if(err) throw err
+				console.log(`images/${storedUrl} has been deleted`);
+			})
+			res.status(400).json({ err })
+		})
 
 }
