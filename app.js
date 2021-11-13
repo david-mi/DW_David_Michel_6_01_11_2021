@@ -6,10 +6,6 @@ const path = require('path');
 require('dotenv').config();
 const helmet = require('helmet');
 
-
-
-
-
 // package pour optimiser et sécuriser les headers
 app.use(helmet())
 
@@ -31,7 +27,7 @@ app.use((req, res, next) => {
     next();
   });
 
-// permet de parser les données reçues
+// permet de parser les données reçues en json
 app.use(express.json());
 
 app.use('/images', express.static(path.join(__dirname, 'images')));

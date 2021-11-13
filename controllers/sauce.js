@@ -75,15 +75,8 @@ exports.updateOneSauce = (req, res, next) =>{
 
 
 exports.voteOneSauce = (req, res, next) =>{
-	let allUsers = [];
 	let voteValue = req.body.like
-	let userId = req.body.userId
-
-	User.find()
-		.then(users => {
-			users.forEach(elem => allUsers.push(elem._id.toString()))
-		})
-		.catch(error => res.status(500).json({ error }))
+	let userId = req.token.userId
 
 	Sauce.findById(req.params.id)
 	
@@ -110,14 +103,6 @@ exports.voteOneSauce = (req, res, next) =>{
 				if(isThere) throw ("You cannot do the same vote twice !")
 			}
 
-			let checkRegistered = (userArr, id) =>{
-				let userCheck = userArr.some(user => user === id)
-				if(!userCheck){
-					throw ("This user does not exist on database")
-				}
-			}
-
-			checkRegistered(allUsers, userId)
 
 			if(voteValue === -1){
 				checkAlreadyVoted(dislikeArr);
