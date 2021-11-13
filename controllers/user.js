@@ -3,21 +3,22 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 
-exports.signup = (req, res, next) => {
+
+exports.signup = (req, res) => {
   bcrypt.hash(req.body.password, 10)
   .then(hash => {
     const user = new User({
       password: hash,
       email: req.body.email
-      });
+      })
       user.save()
         .then(() => res.status(201).json({Message : 'Utilisateur Créé !'}))
-        .catch(err => res.status(500).json( {err} ));
+        .catch(err => res.status(500).json( { err : 'mdr' } ));
     })
-    .catch(err => res.status(500).json({ err }))
+  .catch(err => res.status(500).json({ err }))
 };
 
-exports.login = ((req, res, next) => {
+exports.login = ((req, res) => {
   User.findOne({ email: req.body.email })
 		.then(user =>{
 			if(!user){

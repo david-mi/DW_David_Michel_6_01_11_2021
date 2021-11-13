@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 // on importe les controllers user
 const userCtrl = require('../controllers/user');
-const auth = require('../middleware/auth');
-const pw = require('../middleware/password');
+const rateLimit = require('../middleware/rateLimit');
+const userValidator = require('../middleware/userValidator')
 
-router.post('/signup', pw, userCtrl.signup);
-router.post('/login', userCtrl.login);
+
+router.post('/signup', userValidator, userCtrl.signup);
+router.post('/login', userValidator, rateLimit, userCtrl.login);
 
 module.exports = router;

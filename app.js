@@ -4,6 +4,14 @@ const app = express();
 const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config();
+const helmet = require('helmet');
+
+
+
+
+
+// package pour optimiser et sécuriser les headers
+app.use(helmet())
 
 /// importation des routes
 const userRoutes = require('./routes/user');
@@ -11,10 +19,9 @@ const sauceRoutes = require('./routes/sauce');
 
 /// Connexion avec la base de donnée mongodB
 mongoose.connect(`mongodb+srv://admin:${process.env.MONGOOSE_PW}@cluster0.3neqo.mongodb.net/Projet-6-OC_Piiquante?retryWrites=true&w=majority`,
-  { useNewUrlParser: true,
-    useUnifiedTopology: true })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'));
+  { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('Connexion à MongoDB réussie !'))
+    .catch(() => console.log('Connexion à MongoDB échouée !'));
 
 // Ajout des headers
 app.use((req, res, next) => {
@@ -23,7 +30,6 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     next();
   });
-
 
 // permet de parser les données reçues
 app.use(express.json());

@@ -1,6 +1,5 @@
 const Sauce = require('../models/Sauce');
 const User = require('../models/User');
-const Like = require('../models/Like');
 const fs = require('fs');
 
 // fonction pour parser une cible définie
@@ -34,7 +33,7 @@ exports.updateOneSauce = (req, res, next) =>{
 	/// on regarde si l'objet sauce existe dans la requête
 	/// si oui ça veut dire qu'on souhaite changer l'image
 	if (req.body.sauce){
-
+		console.log(req.body.sauce)
 		let parsedSauce = parseSauce(req.body.sauce)
 		const updatedSauce = new Sauce({
 			_id: req.params.id,
@@ -47,7 +46,6 @@ exports.updateOneSauce = (req, res, next) =>{
 					},{ runValidators: true })
 			Sauce.findByIdAndUpdate(req.params.id, updatedSauce, { runValidators: true })
 				.then(sauce => {
-					console.log(sauce)
 					let storedUrl = sauce.imageUrl.split('/images/')[1]
 					fs.unlink(`images/${storedUrl}`, (err) =>{
 						if(err) throw err
@@ -55,12 +53,13 @@ exports.updateOneSauce = (req, res, next) =>{
 					})
 					res.status(201).json({ message: "c'est modif !" })
 				})
+				.catch(err => res.status(400).json(err))
 		
 	/// si l'objet sauce n'est pas trouvé dans la requête
 	// ça veut dire que les informations se trouve directement dans
 	// le body et qu'on ne souhaite pas changer l'image	
 	}else{
-
+		console.log(req.body)
 		Sauce.updateOne({_id: req.params.id}, {
 			_id: req.params.id,
 			name: req.body.name,
@@ -165,7 +164,6 @@ exports.addSauce = (req, res, next) => {
 		heat: parsedSauce.heat,
 		imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
   })
-
   sauce.save()
 		.then(() => res.status(201).json({ Message: "Sauce Créé" }))
 		.catch(err => res.status(400).json({ err }))
