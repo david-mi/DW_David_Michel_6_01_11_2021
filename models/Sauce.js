@@ -4,7 +4,7 @@ var validate = require('mongoose-validator');
 var stringVal = [
     validate({
       validator: 'isLength',
-      arguments: [2, 30],
+      arguments: [2, 50],
       message: 'Name should be between {ARGS[0]} and {ARGS[1]} characters',
     }),
     validate({

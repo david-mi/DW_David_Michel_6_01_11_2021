@@ -1,5 +1,5 @@
 const rateLimit = require("express-rate-limit");
-const minutes = 5 
+const minutes = 10 
 
 /// va limiter le nombre de tentatives de connexions par ip
 module.exports = rateLimit({
