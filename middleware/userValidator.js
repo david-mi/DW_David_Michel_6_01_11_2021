@@ -5,7 +5,7 @@ module.exports = [
   body('password')
     .trim()
     .escape()
-    .isLength({ min: 6, max: 20 }).withMessage('le mot de passe doit être compris entre 6 et 15 caractères !')
+    .isLength({ min: 6}).withMessage('le mot de passe doit avoir au minimum 6 caractères !')
     .matches(/[a-z]/).withMessage('le mot de passe doit comporter au minimum une minuscule !')
     .matches(/[A-Z]/).withMessage('le mot de passe doit comporter au minimum une majuscule !')
     .matches(/[0-9]/).withMessage('le mot de passe doit comporter au minimum 1 chiffre !')
