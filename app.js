@@ -14,7 +14,8 @@ const userRoutes = require('./routes/user');
 const sauceRoutes = require('./routes/sauce');
 
 /// Connexion avec la base de donnée mongodB
-mongoose.connect(`mongodb+srv://admin:${process.env.MONGODB_PW}@cluster0.3neqo.mongodb.net/Projet-6-OC_Piiquante?retryWrites=true&w=majority`,
+mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PW}
+@cluster0.3neqo.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`,
   { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('Connexion à MongoDB réussie !'))
     .catch(() => console.log('Connexion à MongoDB échouée !'));
