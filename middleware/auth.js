@@ -8,7 +8,7 @@ module.exports = ((req,res, next) =>{
     req.token = jwt.verify(token, process.env.TOKEN_KEY);
     
     if(req.body.userId && req.body.userId !== req.token.userId){
-      throw ('User Id non valable !')
+      throw ('User Id non valable')
     }else{
       next();
     }

@@ -6,13 +6,13 @@ const sauceSchema = mongoose.Schema({
     
     userId: {
       type: String, 
-      validate: [noChars, 'Forbidden caracters'],
+      validate: [noChars, 'Caractères interdits'],
       trim: true,
       required: true
     },
     name: {
       type: String, 
-      validate: [noChars, 'Forbidden caracters'],
+      validate: [noChars, 'Caractères interdits'],
       trim: true,
       minLength: 2,
       maxLength: 15,
@@ -20,7 +20,7 @@ const sauceSchema = mongoose.Schema({
     },        
     manufacturer: {
       type: String, 
-      validate: [noChars, 'Forbidden caracters'],
+      validate: [noChars, 'Caractères interdits'],
       trim: true,
       minLength: 2,
       maxLength: 30,
@@ -28,7 +28,7 @@ const sauceSchema = mongoose.Schema({
     },        
     description: {
       type: String, 
-      validate: [noChars, 'Forbidden caracters'],
+      validate: [noChars, 'Caractères interdits'],
       trim: true,
       minLength: 2,
       maxLength: 150,
