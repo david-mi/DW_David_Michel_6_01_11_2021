@@ -33,7 +33,6 @@ exports.updateOneSauce = (req, res, next) =>{
 	/// on regarde si l'objet sauce existe dans la requête
 	/// si oui ça veut dire qu'on souhaite changer l'image
 	if (req.body.sauce){
-		console.log(req.body.sauce)
 		let parsedSauce = parseSauce(req.body.sauce)
 		const updatedSauce = new Sauce({
 			_id: req.params.id,
@@ -49,17 +48,22 @@ exports.updateOneSauce = (req, res, next) =>{
 					let storedUrl = sauce.imageUrl.split('/images/')[1]
 					fs.unlink(`images/${storedUrl}`, (err) =>{
 						if(err) throw err
-						console.log(`images/${storedUrl} has been deleted`);
+						console.log(`images/${storedUrl} a été supprimée`);
 					})
-					res.status(201).json({ message: "c'est modif !" })
+					res.status(201).json({ message: "Sauce modifiée" })
 				})
-				.catch(err => res.status(400).json(err))
+				.catch(err => {
+					fs.unlink(`images/${req.file.filename}`, (err) =>{
+						if(err) throw err
+						console.log('Nouvelle image supprimée')
+					})
+					res.status(400).json(err)	
+				})
 		
 	/// si l'objet sauce n'est pas trouvé dans la requête
 	// ça veut dire que les informations se trouve directement dans
 	// le body et qu'on ne souhaite pas changer l'image	
 	}else{
-		console.log(req.body)
 		Sauce.updateOne({_id: req.params.id}, {
 			_id: req.params.id,
 			name: req.body.name,
@@ -68,8 +72,8 @@ exports.updateOneSauce = (req, res, next) =>{
 			mainPepper: req.body.mainPepper,
 			heat: req.body.heat
 				},{ runValidators: true })
-			.then(() => res.status(201).json({ message: "Objet modifié" }))
-			.catch((err) => res.status(400).json({ err }));
+			.then(() => res.status(201).json({ message: "Sauce modifiée" }))
+			.catch((err) => res.status(400).json(err));
 	}
 }
 
@@ -87,20 +91,27 @@ exports.voteOneSauce = (req, res, next) =>{
 			let likeArr = [...sauce.usersLiked]
 			let dislikeArr = [...sauce.usersDisliked]
 
+			// va regarder si l'user à déjà fait le vote inverse
+			// si oui on décrémente le nombre de vote total
+			// et on le retire du tableau
 			let checkVote = (arr, vote) => {
 				let arrCheck = arr.some(e => e === userId)
 				arrUpdate = arr.filter(e => e !== userId)
 				return arrCheck ? [arrUpdate, vote -= 1] : [arr, vote]
 			}
 
+			// va ajouter l'utilisateur dans le tableau approprié a son vote
+			// va aussi incrémenter la valeur de vote totale
 			let addVote = (arr, vote) => {
 				arr.push(userId)
 				return vote += 1
 			}
 
+			// va regarder si l'utilisateur à déjà fait le même vote précédemment
+			// Si oui on renvoie un message d'erreur
 			let checkAlreadyVoted = (arr) => {
 				let isThere = arr.some(e => e === userId)
-				if(isThere) throw ("You cannot do the same vote twice !")
+				if(isThere) throw ("Vous ne pouvez pas faire le même vote deux fois")
 			}
 
 
@@ -132,7 +143,7 @@ exports.voteOneSauce = (req, res, next) =>{
 				usersDisliked: dislikeArr
 		
 			})
-				.then(() => res.status(201).json({ message: "Vote registered !" }))
+				.then(() => res.status(201).json({ message: "Vote enregistré !" }))
 				.catch(err => res.status(400).json({ err }))
 		})
 		.catch( err => res.status(404).json({ err }))
@@ -155,7 +166,7 @@ exports.addSauce = (req, res, next) => {
 		.catch(err => {
 			fs.unlink(`images/${storedUrl}`, (err) =>{
 				if(err) throw err
-				console.log(`images/${storedUrl} has been deleted`);
+				console.log(`images/${storedUrl} a été supprimée`);
 			})
 			res.status(400).json({ err })
 		})

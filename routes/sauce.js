@@ -8,9 +8,9 @@ const idCompare = require('../middleware/idCompare');
 
 router.post('/', auth, multer, sauceCtrl.addSauce)
 router.post('/:id/like', auth, sauceCtrl.voteOneSauce)
-router.get('/', sauceCtrl.getAllSauces)
+router.get('/', auth, sauceCtrl.getAllSauces)
 router.get('/:id', auth, sauceCtrl.getOneSauce)
 router.delete('/:id', auth, idCompare, sauceCtrl.deleteOneSauce)
-router.put('/:id', auth, multer, idCompare, sauceCtrl.updateOneSauce)
+router.put('/:id', auth, idCompare, multer, sauceCtrl.updateOneSauce)
 
 module.exports = router;
